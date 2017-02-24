@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sourceforge.texlipse.properties.StringListFieldEditor;
 
@@ -29,6 +31,9 @@ import net.sourceforge.texlipse.properties.StringListFieldEditor;
  */
 public class PathUtils {
 
+	// Pattern to determine substitutions in environment variables.
+	private static final String ENV_SUB_PATTERN = "\\$\\{([A-Za-z0-9]+)\\}";
+	
 	/**
 	 * This class needs not to be instantiated.
 	 */
@@ -70,7 +75,23 @@ public class PathUtils {
      * @return the given value with variables expanded
      */
     private static String replaceVar(Properties envProp, String str) {
-        // TODO: perform variable expansion
+    	Pattern pattern = Pattern.compile(ENV_SUB_PATTERN);
+    	Matcher matcher = pattern.matcher(str);
+    	while (matcher.find()) {
+    	    Object envValue = envProp.get(matcher.group(1).toUpperCase());
+    	    String envStrValue;
+    	    if (envValue != null) {
+    	    	envStrValue = envValue.toString();
+    	    	if (File.separator != "\\") {
+    	    		envStrValue = envStrValue.replace("\\", "\\\\");
+    	    	}
+    	    }
+    	    else {
+    	    	envStrValue = "";
+    	    }
+    	    Pattern subexpr = Pattern.compile(Pattern.quote(matcher.group(0)));
+    	    str = subexpr.matcher(str).replaceAll(envStrValue);
+    	}
         return str;
     }
 
